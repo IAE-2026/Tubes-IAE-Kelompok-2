@@ -1,0 +1,23 @@
+type Query {
+    bids: [Bid!]! @all
+    bid(id: ID! @eq): Bid @find
+}
+
+type Mutation {
+    createBid(
+        bidder_id: String!
+        item_id: String!
+        bid_amount: Float!
+        status: String
+    ): Bid @create
+}
+
+type Bid {
+    id: ID!
+    bidder_id: String!
+    item_id: String!
+    bid_amount: Float!
+    status: String
+    created_at: DateTime
+    updated_at: DateTime
+}

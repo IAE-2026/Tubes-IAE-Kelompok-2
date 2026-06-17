@@ -1,0 +1,9 @@
+type Query {
+  hello: StudentInfo @field(resolver: "App\\GraphQL\\Queries\\Hello")
+}
+
+type StudentInfo {
+  name: String
+  nim: String
+  message: String
+}
