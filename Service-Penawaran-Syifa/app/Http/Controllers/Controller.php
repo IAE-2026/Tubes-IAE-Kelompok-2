@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use OpenApi\Annotations as OA;
+
+/**
+ * @OA\Info(
+ * title="Service Penawaran API",
+ * version="1.0.0",
+ * description="API untuk manajemen penawaran lelang"
+ * )
+ * @OA\SecurityScheme(
+ * securityScheme="ApiKeyAuth",
+ * type="apiKey",
+ * in="header",
+ * name="x-api-key"
+ * )
+ */
+abstract class Controller
+{
+   
+}

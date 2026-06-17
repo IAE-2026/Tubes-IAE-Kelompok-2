@@ -1,0 +1,113 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Service Penawaran API",
+        "description": "API untuk manajemen penawaran lelang",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/v1/bids": {
+            "get": {
+                "summary": "Ambil semua penawaran",
+                "operationId": "7a84d42e487ad4fe57ffff28149502e5",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "summary": "Kirim penawaran baru",
+                "operationId": "42615eca8932c6b7e152a8b8840b4cf4",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "bidder_id",
+                                    "item_id",
+                                    "bid_amount"
+                                ],
+                                "properties": {
+                                    "bidder_id": {
+                                        "type": "string",
+                                        "example": "USER123"
+                                    },
+                                    "item_id": {
+                                        "type": "string",
+                                        "example": "ITEM001"
+                                    },
+                                    "bid_amount": {
+                                        "type": "number",
+                                        "example": 500000
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/bids/{id}": {
+            "get": {
+                "summary": "Ambil detail penawaran",
+                "operationId": "d8f35ccb87e67d9f0ff10e801541cbc9",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "ApiKeyAuth": {
+                "type": "apiKey",
+                "name": "X-IAE-KEY",
+                "in": "header"
+            }
+        }
+    }
+}
