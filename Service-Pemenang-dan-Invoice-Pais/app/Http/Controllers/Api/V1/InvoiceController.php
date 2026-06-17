@@ -149,69 +149,14 @@ class InvoiceController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'winner_id'  => 'required_without:auction_id|nullable|exists:winners,id',
-            'auction_id' => 'required_without:winner_id|nullable|exists:winners,auction_id',
+            'auction_id' => 'required|string',
+            'use_mock'   => 'nullable|boolean'
         ]);
 
-        $winner = null;
-        if ($request->filled('winner_id')) {
-            $winner = Winner::find($request->winner_id);
-        } else if ($request->filled('auction_id')) {
-            $winner = Winner::where('auction_id', $request->auction_id)->first();
-        }
-
-        if (!$winner) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Pemenang tidak ditemukan.',
-            ], 404);
-        }
-
-        if ($winner->status === 'invoiced') {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Invoice sudah pernah dibuat untuk pemenang ini.',
-            ], 400);
-        }
-
         try {
-            $invoice = DB::transaction(function () use ($winner, $request) {
-                // Calculate invoice amounts
-                $subtotal = (float) $winner->winning_bid;
-                $taxRate = config('invoice.tax_rate', 0.11);
-                $adminFeeRate = config('invoice.admin_fee_rate', 0.02);
-
-                $taxAmount = $subtotal * $taxRate;
-                $adminFee = $subtotal * $adminFeeRate;
-                $totalAmount = $subtotal + $taxAmount + $adminFee;
-
-                $invoiceNumber = Invoice::generateInvoiceNumber();
-
-                // Create local invoice
-                $invoice = Invoice::create([
-                    'invoice_number' => $invoiceNumber,
-                    'winner_id'      => $winner->id,
-                    'auction_id'     => $winner->auction_id,
-                    'item_id'        => $winner->item_id,
-                    'bidder_id'      => $winner->bidder_id,
-                    'bidder_name'    => $winner->bidder_name ?? 'Warga',
-                    'bidder_email'   => $winner->bidder_email ?? 'warga@ktp.iae.id',
-                    'item_name'      => $winner->item_name ?? 'Barang Lelang',
-                    'subtotal'       => $subtotal,
-                    'tax_amount'     => $taxAmount,
-                    'admin_fee'      => $adminFee,
-                    'total_amount'   => $totalAmount,
-                    'status'         => 'unpaid',
-                    'issued_at'      => now(),
-                    'due_date'       => now()->addDays(config('invoice.due_days', 7)),
-                    'notes'          => $request->input('notes'),
-                ]);
-
-                // Update winner status
-                $winner->update(['status' => 'invoiced']);
-
-                return $invoice;
-            });
+            $invoiceService = app(\App\Services\InvoiceService::class);
+            $invoiceData = $invoiceService->createInvoice($request->auction_id, $request->boolean('use_mock', false));
+            $invoice = Invoice::find($invoiceData['id']);
 
             // Perform synchronous SOAP Audit logging
             $soapService = app(SoapAuditService::class);
@@ -242,7 +187,7 @@ class InvoiceController extends Controller
 
             return response()->json([
                 'status'  => 'success',
-                'message' => 'Invoice berhasil dibuat, diaudit ke sistem SOAP, dan disebarkan ke RabbitMQ.',
+                'message' => 'Invoice berhasil dibuat otomatis dari data pemenang lelang.',
                 'data'    => $invoice->fresh(),
             ], 201);
 
@@ -251,7 +196,7 @@ class InvoiceController extends Controller
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Gagal membuat invoice: ' . $e->getMessage(),
-            ], 500);
+            ], $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500);
         }
     }
 }

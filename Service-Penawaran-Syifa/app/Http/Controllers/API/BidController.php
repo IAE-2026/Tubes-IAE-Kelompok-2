@@ -174,4 +174,51 @@ class BidController extends Controller
             'data' => $bid
         ], 201);
     }
+
+    /**
+     * @OA\Get(
+     *     path="/api/v1/bids/highest/{auctionId}",
+     *     summary="Mendapatkan penawaran tertinggi untuk suatu barang",
+     *     tags={"Bids"},
+     *     @OA\Parameter(
+     *         name="auctionId",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(response="200", description="Success")
+     * )
+     */
+    public function highest($auctionId)
+    {
+        $highestBid = Bid::where('item_id', $auctionId)
+            ->orderBy('bid_amount', 'desc')
+            ->first();
+
+        if (!$highestBid) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No bids found for this auction'
+            ], 404);
+        }
+
+        $data = [
+            "bid_id" => (string)$highestBid->id,
+            "auction_id" => (string)$auctionId,
+            "item_id" => (string)$highestBid->item_id,
+            "bidder_id" => $highestBid->bidder_id,
+            "bidder_name" => "Bidder " . $highestBid->bidder_id,
+            "bidder_email" => $highestBid->bidder_id . "@ktp.iae.id",
+            "item_name" => "Barang " . $highestBid->item_id,
+            "amount" => (float)$highestBid->bid_amount,
+            "starting_price" => 0,
+            "auction_status" => "ended",
+            "auction_ended_at" => now()->toIso8601String()
+        ];
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $data
+        ]);
+    }
 }

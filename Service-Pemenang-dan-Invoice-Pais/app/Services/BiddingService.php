@@ -24,8 +24,8 @@ class BiddingService
 
     public function __construct()
     {
-        $this->baseUrl = config('services.service_b.base_url', 'http://bidding-service:8001');
-        $this->apiKey  = config('services.service_b.api_key', '');
+        $this->baseUrl = config('services.service_b.base_url', env('BIDDING_SERVICE_URL', 'http://service-penawaran:80'));
+        $this->apiKey  = config('services.service_b.api_key', env('BIDDING_SERVICE_KEY', 'rahasia-bids-123'));
 
         $this->client = new Client([
             'base_uri' => $this->baseUrl,
