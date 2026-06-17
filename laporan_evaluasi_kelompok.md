@@ -13,7 +13,7 @@ Semua rute krusial telah tersedia dan sesuai standar integrasi.
 - `GET /v1/verifications/{id}` : ✅ Ada (Pencarian by user_id untuk integrasi internal)
 - `Dockerfile` : ✅ Ada
 
-**Status:** Tidak ada perbaikan yang diperlukan. Service sudah siap digabungkan..
+**Status:** Tidak ada perbaikan yang diperlukan. Service sudah siap digabungkan.
 
 ---
 
