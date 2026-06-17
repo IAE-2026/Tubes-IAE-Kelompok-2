@@ -118,8 +118,11 @@ class BidController extends Controller
         }
 
         try {
-            $userCheck = Http::get("http://localhost:8004/api/v1/verifications/" . $request->bidder_id);
-            $itemCheck = Http::get("http://localhost:8001/api/v1/items/" . $request->item_id);
+            $verifikasiUrl = env('VERIFIKASI_URL', 'http://service-verifikasi:80/api/v1/verifications/');
+            $katalogUrl = env('KATALOG_URL', 'http://service-katalog:80/api/v1/items/');
+
+            $userCheck = Http::withHeaders(['X-IAE-KEY' => '102022400117'])->get($verifikasiUrl . $request->bidder_id);
+            $itemCheck = Http::get($katalogUrl . $request->item_id);
 
             if (!$userCheck->successful() || !$itemCheck->successful()) {
                 return response()->json([
