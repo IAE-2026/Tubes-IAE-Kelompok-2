@@ -8,8 +8,8 @@ return [
         'scheme'   => 'https',
     ],
     'service_b' => [
-        'base_url' => env('SERVICE_B_BASE_URL', 'http://localhost:8001'),
-        'api_key'  => env('SERVICE_B_API_KEY', ''),
+        'base_url' => env('SERVICE_B_BASE_URL', 'http://service-penawaran:80'),
+        'api_key'  => env('SERVICE_B_API_KEY', 'rahasia-bids-123'),
         'timeout'  => 10,
     ],
     'service_a' => [
