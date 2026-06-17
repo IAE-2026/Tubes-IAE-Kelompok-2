@@ -32,8 +32,11 @@ class InvoiceController extends Controller
     )]
     public function index(): JsonResponse
     {
+        $invoices = Invoice::with('winner')->get();
+
         return response()->json([
-            'message' => 'Invoices endpoint works'
+            'status' => 'success',
+            'data'   => $invoices
         ]);
     }
 
@@ -58,9 +61,18 @@ class InvoiceController extends Controller
     )]
     public function show($id): JsonResponse
     {
+        $invoice = Invoice::with('winner')->find($id);
+
+        if (!$invoice) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Invoice tidak ditemukan'
+            ], 404);
+        }
+
         return response()->json([
-            'message' => 'Detail invoice',
-            'id' => $id
+            'status' => 'success',
+            'data'   => $invoice
         ]);
     }
 
