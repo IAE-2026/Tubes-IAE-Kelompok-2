@@ -18,10 +18,63 @@
                     "Invoices"
                 ],
                 "summary": "Daftar invoice",
+                "description": "Menampilkan daftar invoice dengan pagination. Bisa difilter berdasarkan status.",
                 "operationId": "bc7d90facaef99e1846d581b3a3b6efa",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter berdasarkan status: unpaid, paid, overdue",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "unpaid",
+                                "paid",
+                                "overdue"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Jumlah data per halaman (default: 10)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Success"
+                        "description": "Daftar invoice berhasil diambil",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Daftar invoice berhasil diambil."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: Bearer token is missing."
                     }
                 }
             },
@@ -64,18 +117,49 @@
                     "Invoices"
                 ],
                 "summary": "Detail invoice",
+                "description": "Menampilkan detail invoice berdasarkan ID atau Nomor Invoice beserta pemenang terkait.",
                 "operationId": "8e26839ec5797200db20667a31142ea0",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "Invoice ID",
-                        "required": true
+                        "description": "ID atau Nomor Invoice",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "INV-2024-000001"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Success"
+                        "description": "Detail invoice berhasil diambil",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Detail invoice berhasil diambil."
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: Bearer token is missing."
+                    },
+                    "404": {
+                        "description": "Invoice tidak ditemukan."
                     }
                 }
             }

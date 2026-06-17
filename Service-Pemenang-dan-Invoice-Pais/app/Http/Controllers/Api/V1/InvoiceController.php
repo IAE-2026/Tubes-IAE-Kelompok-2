@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Api\BaseApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\Winner;
@@ -19,49 +20,102 @@ use OpenApi\Attributes as OA;
 )]
 class InvoiceController extends Controller
 {
+    use BaseApiResponse;
+
     #[OA\Get(
         path: "/api/v1/invoices",
         summary: "Daftar invoice",
-        tags: ["Invoices"],
-        responses: [
-            new OA\Response(
-                response: 200,
-                description: "Success"
-            )
-        ]
-    )]
-    public function index(): JsonResponse
-    {
-        return response()->json([
-            'message' => 'Invoices endpoint works'
-        ]);
-    }
-
-    #[OA\Get(
-        path: "/api/v1/invoices/{id}",
-        summary: "Detail invoice",
+        description: "Menampilkan daftar invoice dengan pagination. Bisa difilter berdasarkan status.",
         tags: ["Invoices"],
         parameters: [
             new OA\Parameter(
-                name: "id",
-                description: "Invoice ID",
-                in: "path",
-                required: true
+                name: "status",
+                in: "query",
+                description: "Filter berdasarkan status: unpaid, paid, overdue",
+                required: false,
+                schema: new OA\Schema(type: "string", enum: ["unpaid", "paid", "overdue"])
+            ),
+            new OA\Parameter(
+                name: "per_page",
+                in: "query",
+                description: "Jumlah data per halaman (default: 10)",
+                required: false,
+                schema: new OA\Schema(type: "integer", default: 10)
             )
         ],
         responses: [
             new OA\Response(
                 response: 200,
-                description: "Success"
+                description: "Daftar invoice berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "status", type: "string", example: "success"),
+                        new OA\Property(property: "message", type: "string", example: "Daftar invoice berhasil diambil."),
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(type: "object")
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthorized: Bearer token is missing.")
+        ]
+    )]
+    public function index(Request $request): JsonResponse
+    {
+        $query = Invoice::with('winner')
+            ->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
+            ->latest();
+
+        $perPage = min($request->get('per_page', 10), 100);
+        $invoices = $query->paginate($perPage);
+
+        return $this->paginatedResponse($invoices, 'Daftar invoice berhasil diambil.');
+    }
+
+    #[OA\Get(
+        path: "/api/v1/invoices/{id}",
+        summary: "Detail invoice",
+        description: "Menampilkan detail invoice berdasarkan ID atau Nomor Invoice beserta pemenang terkait.",
+        tags: ["Invoices"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "ID atau Nomor Invoice",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "string", example: "INV-2024-000001")
             )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Detail invoice berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "status", type: "string", example: "success"),
+                        new OA\Property(property: "message", type: "string", example: "Detail invoice berhasil diambil."),
+                        new OA\Property(property: "data", type: "object")
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthorized: Bearer token is missing."),
+            new OA\Response(response: 404, description: "Invoice tidak ditemukan.")
         ]
     )]
     public function show($id): JsonResponse
     {
-        return response()->json([
-            'message' => 'Detail invoice',
-            'id' => $id
-        ]);
+        $invoice = Invoice::with('winner')
+            ->where('id', $id)
+            ->orWhere('invoice_number', $id)
+            ->first();
+
+        if (!$invoice) {
+            return $this->notFoundResponse('Invoice');
+        }
+
+        return $this->successResponse($invoice, 'Detail invoice berhasil diambil.');
     }
 
     #[OA\Post(
