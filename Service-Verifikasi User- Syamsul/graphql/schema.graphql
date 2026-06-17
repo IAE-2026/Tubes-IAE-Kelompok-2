@@ -1,0 +1,17 @@
+scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
+
+type Query {
+    verifications: [Verification!]! @all
+
+    verification(user_id: ID @eq): Verification @find
+}
+
+type Verification {
+    id: ID!
+    user_id: Int!
+    nik: String!
+    bank_account_number: String!
+    verification_status: String!
+    created_at: DateTime!
+    updated_at: DateTime!
+}
