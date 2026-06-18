@@ -123,7 +123,8 @@ class VerificationController extends Controller
                 'verification_id' => $verification->id,
                 'user_id' => $verification->user_id,
                 'nik' => $verification->nik,
-                'status' => 'VERIFIED'
+                'status' => 'VERIFIED',
+                'receipt_number' => $receiptNumber ?? null
             ]);
         }
 
