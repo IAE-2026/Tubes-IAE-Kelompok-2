@@ -6,7 +6,7 @@ use App\Http\Controllers\API\BidController;
 Route::prefix('v1')->group(function () {
     Route::middleware('api.key')->group(function () {
         Route::get('/bids', [BidController::class, 'index']);
-        Route::get('/bids/highest/{itemId}', [BidController::class, 'highest']);
+        Route::get('/bids/highest/{auctionId}', [BidController::class, 'highest']);
         Route::get('/bids/{id}', [BidController::class, 'show']);
     });
     

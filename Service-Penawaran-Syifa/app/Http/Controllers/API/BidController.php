@@ -222,12 +222,12 @@ class BidController extends Controller
     }
 
     #[OA\Get(
-        path: "/api/v1/bids/highest/{itemId}",
+        path: "/api/v1/bids/highest/{auctionId}",
         summary: "Ambil penawaran tertinggi untuk suatu barang",
         security: [["ApiKeyAuth" => []]],
         parameters: [
             new OA\Parameter(
-                name: "itemId",
+                name: "auctionId",
                 in: "path",
                 required: true,
                 schema: new OA\Schema(type: "string")
@@ -238,9 +238,9 @@ class BidController extends Controller
             new OA\Response(response: 404, description: "Not Found")
         ]
     )]
-    public function highest($itemId)
+    public function highest($auctionId)
     {
-        $highestBid = Bid::where('item_id', $itemId)
+        $highestBid = Bid::where('item_id', $auctionId)
             ->where('status', 'valid')
             ->orderBy('bid_amount', 'desc')
             ->first();
