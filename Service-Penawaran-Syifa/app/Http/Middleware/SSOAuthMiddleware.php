@@ -39,7 +39,14 @@ class SSOAuthMiddleware
         $name = $payload->name ?? $payload->profile->name ?? 'SSO User';
 
         $role = $payload->role ?? $payload->profile->role ?? null;
-        if (!$role) {
+        
+        // Standardisasi role mapping (Celah #11)
+        if ($role === 'user' || $role === 'warga' || $role === 'bidder') {
+            $role = 'bidder';
+        } elseif ($role === 'admin') {
+            $role = 'admin';
+        } else {
+            // Fallback jika role null atau tidak dikenal
             if (str_contains($email, 'warga') || str_contains($email, 'ktp.iae.id')) {
                 $role = 'bidder';
             } else {
