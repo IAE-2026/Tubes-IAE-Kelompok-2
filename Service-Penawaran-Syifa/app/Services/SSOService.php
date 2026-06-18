@@ -6,6 +6,7 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Illuminate\Support\Facades\Http;
 use Firebase\JWT\JWK;
+use Illuminate\Support\Facades\Cache;
 
 class SSOService
 {
@@ -18,14 +19,16 @@ class SSOService
     {
         $jwksUrl = $this->getBaseUrl() . '/api/v1/auth/jwks';
 
-        // Fetch public keys dari server dosen
-        $response = Http::get($jwksUrl);
+        // Fetch public keys dari server dosen dengan Caching (1 jam)
+        $jwks = Cache::remember('sso_jwks', 3600, function () use ($jwksUrl) {
+            $response = Http::get($jwksUrl);
 
-        if ($response->failed()) {
-            throw new \Exception('Gagal fetch JWKS dari SSO server');
-        }
+            if ($response->failed()) {
+                throw new \Exception('Gagal fetch JWKS dari SSO server');
+            }
 
-        $jwks = $response->json();
+            return $response->json();
+        });
 
         // Parse JWKS jadi array of Key
         $keys = JWK::parseKeySet($jwks);
