@@ -21,6 +21,7 @@ class BidController extends Controller
         $this->soapAuditService = $soapAuditService;
         $this->amqpPublishService = $amqpPublishService;
     }
+
     #[OA\Get(
         path: "/api/v1/bids",
         summary: "Ambil semua penawaran",
@@ -130,8 +131,53 @@ class BidController extends Controller
                     'message' => 'Validasi ke service lain gagal'
                 ], 403);
             }
+
+            // Celah #2: Validasi status verifikasi user harus VERIFIED
+            $userData = $userCheck->json();
+            if (($userData['data']['verification_status'] ?? '') !== 'VERIFIED') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User belum terverifikasi'
+                ], 403);
+            }
+
+            // Celah #3: Validasi status barang lelang harus OPEN
+            $itemData = $itemCheck->json();
+            if (($itemData['data']['status'] ?? '') !== 'OPEN') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Barang tidak sedang dilelang'
+                ], 403);
+            }
+
+            // Celah #4: Validasi harga bid vs harga dasar barang
+            $basePrice = $itemData['data']['base_price'] ?? 0;
+            if ($request->bid_amount < $basePrice) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Bid harus lebih besar atau sama dengan harga dasar barang (' . $basePrice . ').'
+                ], 422);
+            }
+
+            // Tambahan: Validasi bid baru harus lebih tinggi dari penawaran tertinggi saat ini
+            $highestBid = Bid::where('item_id', $request->item_id)
+                ->where('status', 'valid')
+                ->max('bid_amount');
+
+            if ($highestBid && $request->bid_amount <= $highestBid) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Jumlah penawaran harus lebih tinggi dari penawaran tertinggi saat ini (' . $highestBid . ').'
+                ], 422);
+            }
+
         } catch (\Exception $e) {
-            Log::warning('Koneksi ke microservice verifikasi/item gagal, melanjutkan pemrosesan: ' . $e->getMessage());
+            // Celah #1: Jangan biarkan bid lolos jika request eksternal gagal/error
+            Log::error('Koneksi ke microservice verifikasi/item gagal: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Service eksternal tidak tersedia. Silakan coba beberapa saat lagi.'
+            ], 503);
         }
 
         $bid = Bid::create([
@@ -175,50 +221,83 @@ class BidController extends Controller
         ], 201);
     }
 
-    /**
-     * @OA\Get(
-     *     path="/api/v1/bids/highest/{auctionId}",
-     *     summary="Mendapatkan penawaran tertinggi untuk suatu barang",
-     *     tags={"Bids"},
-     *     @OA\Parameter(
-     *         name="auctionId",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Response(response="200", description="Success")
-     * )
-     */
+    #[OA\Get(
+        path: "/api/v1/bids/highest/{auctionId}",
+        summary: "Ambil penawaran tertinggi untuk suatu barang",
+        security: [["ApiKeyAuth" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "auctionId",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "string")
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Success"),
+            new OA\Response(response: 404, description: "Not Found")
+        ]
+    )]
     public function highest($auctionId)
     {
         $highestBid = Bid::where('item_id', $auctionId)
+            ->where('status', 'valid')
             ->orderBy('bid_amount', 'desc')
             ->first();
 
         if (!$highestBid) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'No bids found for this auction'
+                'message' => 'Belum ada penawaran untuk barang ini'
             ], 404);
         }
 
-        $data = [
-            "bid_id" => (string)$highestBid->id,
-            "auction_id" => (string)$auctionId,
-            "item_id" => (string)$highestBid->item_id,
-            "bidder_id" => $highestBid->bidder_id,
-            "bidder_name" => "Bidder " . $highestBid->bidder_id,
-            "bidder_email" => $highestBid->bidder_id . "@ktp.iae.id",
-            "item_name" => "Barang " . $highestBid->item_id,
-            "amount" => (float)$highestBid->bid_amount,
-            "starting_price" => 0,
-            "auction_status" => "ended",
-            "auction_ended_at" => now()->toIso8601String()
-        ];
+        // Celah #5: Ambil data bidder asli dari tabel user lokal (yang diisi oleh SSO middleware)
+        $bidder = \App\Models\User::find($highestBid->bidder_id);
+        $bidderName = $bidder ? $bidder->name : "Bidder " . $highestBid->bidder_id;
+        $bidderEmail = $bidder ? $bidder->email : $highestBid->bidder_id . "@ktp.iae.id";
+
+        // Celah #5: Tarik data katalog secara real-time untuk nama barang asli dan base price
+        $katalogUrl = env('KATALOG_URL', 'http://service-katalog:80/api/v1/items/');
+        $itemName = "Barang " . $highestBid->item_id;
+        $startingPrice = (float)$highestBid->bid_amount; // fallback
+        $auctionStatus = "ended";
+        $auctionEndedAt = now()->toIso8601String();
+
+        try {
+            $itemCheck = Http::get($katalogUrl . $highestBid->item_id);
+            if ($itemCheck->successful()) {
+                $itemData = $itemCheck->json();
+                $itemName = $itemData['data']['name'] ?? $itemName;
+                $startingPrice = (float)($itemData['data']['base_price'] ?? $startingPrice);
+                
+                // Celah #6: Bandingkan auction_end_at dengan waktu sekarang untuk status aslinya
+                $auctionEndAtStr = $itemData['data']['auction_end_at'] ?? null;
+                if ($auctionEndAtStr) {
+                    $auctionEndedAt = $auctionEndAtStr;
+                    $endTime = \Carbon\Carbon::parse($auctionEndAtStr);
+                    $auctionStatus = now()->gt($endTime) ? "ended" : "ongoing";
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Gagal mengambil detail item dari katalog service: ' . $e->getMessage());
+        }
 
         return response()->json([
             'status' => 'success',
-            'data' => $data
-        ]);
+            'data' => [
+                'bid_id' => (string)$highestBid->id,
+                'auction_id' => $highestBid->item_id,
+                'item_id' => $highestBid->item_id,
+                'bidder_id' => $highestBid->bidder_id,
+                'bidder_name' => $bidderName,
+                'bidder_email' => $bidderEmail,
+                'item_name' => $itemName,
+                'amount' => (float)$highestBid->bid_amount,
+                'starting_price' => $startingPrice,
+                'auction_status' => $auctionStatus,
+                'auction_ended_at' => $auctionEndedAt
+            ]
+        ], 200);
     }
 }
