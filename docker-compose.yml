@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./api-gateway/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - service-verifikasi
+      - service-penawaran
+      - service-katalog
+      - service-invoice
+    networks:
+      - iae_network
+
+  service-verifikasi:
+    build:
+      context: "./Service-Verifikasi-User- Syamsul"
+    container_name: service-verifikasi
+    restart: unless-stopped
+    networks:
+      - iae_network
+
+  service-penawaran:
+    build:
+      context: "./Service-Penawaran-Syifa"
+    container_name: service-penawaran
+    restart: unless-stopped
+    networks:
+      - iae_network
+
+  service-katalog:
+    build:
+      context: "./Service-managed items-bani"
+    container_name: service-katalog
+    restart: unless-stopped
+    networks:
+      - iae_network
+
+  service-invoice:
+    build:
+      context: "./Service-Pemenang-dan-Invoice-Pais"
+    container_name: service-invoice
+    restart: unless-stopped
+    networks:
+      - iae_network
+
+networks:
+  iae_network:
+    driver: bridge
