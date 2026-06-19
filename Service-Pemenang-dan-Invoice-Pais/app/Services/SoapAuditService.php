@@ -19,6 +19,7 @@ class SoapAuditService
 
             $response = Http::withoutVerifying()->post($baseUrl . '/api/v1/auth/token', [
                 'api_key' => $apiKey,
+                'nim' => '102022430010'
             ]);
 
             if ($response->failed()) {
