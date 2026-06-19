@@ -20,7 +20,7 @@ class UpdateItemRequest extends FormRequest
             'base_price' => ['sometimes', 'required', 'numeric', 'min:0'],
             'current_price' => ['sometimes', 'required', 'numeric', 'min:0'],
             'auction_start_at' => ['sometimes', 'required', 'date'],
-            'auction_end_at' => ['sometimes', 'required', 'date', 'after:auction_start_at'],
+            'auction_end_at' => ['sometimes', 'required', 'date', 'after:auction_start_at', 'after:now'],
             'status' => ['sometimes', 'required', Rule::in(['DRAFT', 'OPEN', 'CLOSED', 'CANCELLED'])],
         ];
     }

@@ -20,7 +20,7 @@ class StoreItemRequest extends FormRequest
             'base_price' => ['required', 'numeric', 'min:0'],
             'current_price' => ['nullable', 'numeric', 'min:0'],
             'auction_start_at' => ['required', 'date'],
-            'auction_end_at' => ['required', 'date', 'after:auction_start_at'],
+            'auction_end_at' => ['required', 'date', 'after:auction_start_at', 'after:now'],
             'status' => ['required', Rule::in(['DRAFT', 'OPEN', 'CLOSED', 'CANCELLED'])],
         ];
     }
