@@ -45,7 +45,8 @@ class SSOService
         $apiKey = env('SSO_API_KEY', 'KEY-MHS-203');
 
         $response = Http::post($tokenUrl, [
-            'api_key' => $apiKey
+            'api_key' => $apiKey,
+            'nim' => '102022400161'
         ]);
 
         if ($response->failed()) {
