@@ -122,7 +122,13 @@ class BidController extends Controller
             $verifikasiUrl = env('VERIFIKASI_URL', 'http://service-verifikasi:80/api/v1/verifications/');
             $katalogUrl = env('KATALOG_URL', 'http://service-katalog:80/api/v1/items/');
 
-            $userCheck = Http::withHeaders(['X-IAE-KEY' => '102022400117'])->get($verifikasiUrl . $request->bidder_id);
+            // Extract integer from bidder_id to match Syamsul's user_id format
+            $verificationUserId = $request->bidder_id;
+            if (preg_match('/(\d+)/', $verificationUserId, $matches)) {
+                $verificationUserId = $matches[1];
+            }
+
+            $userCheck = Http::withHeaders(['X-IAE-KEY' => '102022400117'])->get($verifikasiUrl . $verificationUserId);
             $itemCheck = Http::get($katalogUrl . $request->item_id);
 
             if (!$userCheck->successful() || !$itemCheck->successful()) {
