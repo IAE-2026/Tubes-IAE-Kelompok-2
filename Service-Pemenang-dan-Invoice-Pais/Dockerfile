@@ -22,6 +22,9 @@ COPY . .
 
 # Ensure storage exists and change permissions
 RUN mkdir -p storage/framework/views storage/framework/cache storage/framework/sessions storage/logs bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && mkdir -p database \
+    && touch database/database.sqlite \
+    && chown -R www-data:www-data database
 
 EXPOSE 80

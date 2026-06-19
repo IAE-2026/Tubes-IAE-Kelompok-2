@@ -1,8 +1,8 @@
 FROM php:8.2-apache
 
 RUN apt-get update && apt-get install -y \
-    git curl zip unzip libpng-dev libonig-dev libxml2-dev \
-    && docker-php-ext-install pdo pdo_mysql mbstring
+    git curl zip unzip libpng-dev libonig-dev libxml2-dev libsqlite3-dev sqlite3 \
+    && docker-php-ext-install pdo pdo_mysql pdo_sqlite mbstring
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
@@ -18,6 +18,8 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts --ignore-platfo
 
 COPY . .
 
-RUN chown -R www-data:www-data storage bootstrap/cache
+RUN mkdir -p database \
+    && touch database/database.sqlite \
+    && chown -R www-data:www-data storage bootstrap/cache database
 
 EXPOSE 80
