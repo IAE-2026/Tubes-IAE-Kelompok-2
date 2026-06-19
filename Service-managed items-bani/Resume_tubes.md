@@ -1,9 +1,9 @@
 # TUGAS BESAR IAE
-## kontribusi dalam kelompok 2
+**kontribusi dalam kelompok 2**
 
-## Nama: Muhammad Zuhdi Robbani
-## NIM: 102022400278
-## Service: Service Penawaran
+### Nama: Muhammad Zuhdi Robbani
+### NIM: 102022400278
+### Service: Service Penawaran
 
 *Membantu menganalisis pemahaman tentang proses bisnis dan dependency antar service*
 
