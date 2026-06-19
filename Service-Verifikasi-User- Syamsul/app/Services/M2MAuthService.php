@@ -20,7 +20,8 @@ class M2MAuthService
             $apiKey = env('IAE_API_KEY', 'KEY-MHS-158');
             
             $response = Http::post('https://iae-sso.virtualfri.id/api/v1/auth/token', [
-                'api_key' => $apiKey
+                'api_key' => $apiKey,
+                'nim' => '102022400117'
             ]);
             
             if ($response->successful()) {
